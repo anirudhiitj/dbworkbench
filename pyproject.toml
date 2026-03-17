@@ -5,6 +5,16 @@ description = "Workbench including rollback"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
+dependencies = [
+    "boto3>=1.42.44",
+    "pyyaml>=6.0.3",
+    "matplotlib>=3.7.0",
+    "numpy>=1.24.0",
+    "psycopg2-binary>=2.9.11",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.34.0",
+    "pydantic>=2.10.0",
+]
 
 [dependency-groups]
 dev = [

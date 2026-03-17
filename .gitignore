@@ -1,5 +1,29 @@
-*.yaml
-*.venv
+# Python
 __pycache__/
-*.git
-.vscode
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+
+# Config / secrets
+*.yaml
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# UV
+uv.lock
+
+# Certs
+certs/
