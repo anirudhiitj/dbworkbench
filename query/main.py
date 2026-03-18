@@ -2,12 +2,14 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import yaml
 from contextlib import contextmanager
-from typing import List, Dict, Any, Optional
+from pathlib import Path
+from typing import List, Dict, Any, Optional, Union
 
 
 def load_config():
     """Load database configuration from config.yaml"""
-    with open("../config.yaml", "r") as f:
+    config_path = (Path(__file__).resolve().parent.parent / "config.yaml")
+    with config_path.open("r") as f:
         return yaml.safe_load(f)
 
 
@@ -42,13 +44,13 @@ def get_db_connection(dict_cursor=False):
     except Exception as e:
         if conn:
             conn.rollback()
-        raise e
+        raise
     finally:
         if conn:
             conn.close()
 
 
-def read_query(query: str, params: Optional[tuple] = None, as_dict: bool = True) -> List[Dict[str, Any]]:
+def read_query(query: str, params: Optional[tuple] = None, as_dict: bool = True) -> Union[List[Dict[str, Any]], List[tuple]]:
     """
     Execute a SELECT query and return results.
     
@@ -71,7 +73,7 @@ def read_query(query: str, params: Optional[tuple] = None, as_dict: bool = True)
         return results
 
 
-def read_one(query: str, params: Optional[tuple] = None, as_dict: bool = True) -> Optional[Dict[str, Any]]:
+def read_one(query: str, params: Optional[tuple] = None, as_dict: bool = True) -> Union[Dict[str, Any], tuple, None]:
     """
     Execute a SELECT query and return single result.
     

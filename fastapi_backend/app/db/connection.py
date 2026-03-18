@@ -16,13 +16,13 @@ from fastapi_backend.app.config import (
     DB_POOL_MAX,
 )
 
-_pool: pool.SimpleConnectionPool | None = None
+_pool: pool.ThreadedConnectionPool | None = None
 
 
 def init_pool():
     """Initialize the connection pool.  Call once at app startup."""
     global _pool
-    _pool = pool.SimpleConnectionPool(
+    _pool = pool.ThreadedConnectionPool(
         minconn=DB_POOL_MIN,
         maxconn=DB_POOL_MAX,
         host=DB_HOST,

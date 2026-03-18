@@ -79,6 +79,7 @@ def create_snapshot(
     if own_conn:
         conn = get_connection()
 
+    tmp_path = None
     try:
         # Resolve commit_number if not given
         if commit_number is None:
@@ -108,7 +109,6 @@ def create_snapshot(
         )
 
         upload_snapshot(tmp_path, s3_key)
-        os.unlink(tmp_path)
 
         # Record metadata
         cur = conn.cursor()
@@ -129,32 +129,44 @@ def create_snapshot(
             conn.rollback()
         raise
     finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except FileNotFoundError:
+                pass
         if own_conn:
             release_connection(conn)
 
 
 def restore_snapshot(s3_key: str):
     """Download a snapshot from S3 and restore it via ``psql``."""
-    with tempfile.NamedTemporaryFile(suffix=".sql", delete=False) as tmp:
-        tmp_path = tmp.name
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".sql", delete=False) as tmp:
+            tmp_path = tmp.name
 
-    download_snapshot(s3_key, tmp_path)
+        download_snapshot(s3_key, tmp_path)
 
-    env = os.environ.copy()
-    env["PGPASSWORD"] = DB_PASSWORD
-    subprocess.run(
-        [
-            "psql",
-            "-h", DB_HOST,
-            "-p", str(DB_PORT),
-            "-U", DB_USER,
-            "-d", DB_NAME,
-            "-f", tmp_path,
-        ],
-        env=env,
-        check=True,
-    )
-    os.unlink(tmp_path)
+        env = os.environ.copy()
+        env["PGPASSWORD"] = DB_PASSWORD
+        subprocess.run(
+            [
+                "psql",
+                "-h", DB_HOST,
+                "-p", str(DB_PORT),
+                "-U", DB_USER,
+                "-d", DB_NAME,
+                "-f", tmp_path,
+            ],
+            env=env,
+            check=True,
+        )
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except FileNotFoundError:
+                pass
 
 
 # ── Listing ───────────────────────────────────────────────────────────────────

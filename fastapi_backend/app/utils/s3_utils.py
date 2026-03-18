@@ -11,25 +11,44 @@ def _get_client():
 
 def upload_snapshot(local_path: str, s3_key: str):
     """Upload a local file to S3."""
-    _get_client().upload_file(local_path, S3_BUCKET, s3_key)
+    try:
+        _get_client().upload_file(local_path, S3_BUCKET, s3_key)
+    except ClientError as e:
+        raise RuntimeError(f"Failed to upload snapshot to S3 (key='{s3_key}', path='{local_path}')") from e
 
 
 def download_snapshot(s3_key: str, local_path: str):
     """Download a snapshot from S3 to a local file."""
-    _get_client().download_file(S3_BUCKET, s3_key, local_path)
+    try:
+        _get_client().download_file(S3_BUCKET, s3_key, local_path)
+    except ClientError as e:
+        raise RuntimeError(f"Failed to download snapshot from S3 (key='{s3_key}', path='{local_path}')") from e
 
 
 def list_snapshots() -> list[dict]:
     """List all snapshot objects in the S3 bucket."""
     client = _get_client()
-    response = client.list_objects_v2(Bucket=S3_BUCKET, Prefix="snapshots/")
-    contents = response.get("Contents", [])
-    return [{"key": obj["Key"], "size": obj["Size"], "last_modified": obj["LastModified"]} for obj in contents]
+    try:
+        paginator = client.get_paginator("list_objects_v2")
+        all_objects: list[dict] = []
+        for page in paginator.paginate(Bucket=S3_BUCKET, Prefix="snapshots/"):
+            contents = page.get("Contents", [])
+            all_objects.extend(contents)
+    except ClientError as e:
+        raise RuntimeError("Failed to list snapshots from S3") from e
+
+    return [
+        {"key": obj["Key"], "size": obj["Size"], "last_modified": obj["LastModified"]}
+        for obj in all_objects
+    ]
 
 
 def delete_snapshot(s3_key: str):
     """Delete a single snapshot object from S3."""
-    _get_client().delete_object(Bucket=S3_BUCKET, Key=s3_key)
+    try:
+        _get_client().delete_object(Bucket=S3_BUCKET, Key=s3_key)
+    except ClientError as e:
+        raise RuntimeError(f"Failed to delete snapshot from S3 (key='{s3_key}')") from e
 
 
 def delete_old_snapshots(keep_latest: int = 5):

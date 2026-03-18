@@ -8,6 +8,8 @@ threshold has been hit and triggers an auto-snapshot if so.
 
 from __future__ import annotations
 
+import re
+
 from fastapi_backend.app.db.connection import get_connection, release_connection
 from fastapi_backend.app.db import metadata_queries as mq
 from fastapi_backend.app.utils.hashing import generate_commit_hash
@@ -15,6 +17,46 @@ from fastapi_backend.app.services.snapshot_service import (
     get_snapshot_frequency,
     create_snapshot,
 )
+
+_ALLOWED_SQL_KEYWORDS = {
+    "SELECT",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    # Add other safe/expected keywords here if needed, e.g. "ALTER", "CREATE", etc.
+}
+
+
+def _validate_sql_step(sql: str, step_type: str) -> None:
+    """
+    Perform basic validation of a user-provided SQL step before execution.
+
+    Currently it:
+    - Ensures there is at least one non-empty token.
+    - Ensures the first token is in an allowlist of SQL keywords.
+    - Rejects multiple statements separated by semicolons (except an optional
+      trailing semicolon).
+    """
+    if not isinstance(sql, str):
+        raise ValueError("SQL step must be a string.")
+
+    stripped = sql.strip()
+    if not stripped:
+        raise ValueError("SQL step may not be empty.")
+
+    # Disallow stacked statements like "UPDATE ...; DELETE ...;"
+    parts = [p for p in stripped.split(";") if p.strip()]
+    if len(parts) > 1:
+        raise ValueError("Only a single SQL statement per step is allowed.")
+
+    # Grab the first word (keyword) and validate it.
+    match = re.match(r"^([a-zA-Z]+)", stripped)
+    if not match:
+        raise ValueError("Could not determine SQL command keyword.")
+
+    keyword = match.group(1).upper()
+    if keyword not in _ALLOWED_SQL_KEYWORDS:
+        raise ValueError(f"SQL command '{keyword}' is not allowed for commit steps.")
 
 
 def create_commit(steps: list[dict], message: str | None = None) -> dict:
@@ -48,7 +90,8 @@ def create_commit(steps: list[dict], message: str | None = None) -> dict:
             sql = step["sql"]
             step_type = step.get("step_type", "DML")
 
-            # Execute the actual user SQL on the database
+            # Validate and then execute the actual user SQL on the database
+            _validate_sql_step(sql=sql, step_type=step_type)
             cur.execute(sql)
 
             # Record metadata

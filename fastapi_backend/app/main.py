@@ -8,6 +8,7 @@ Shutdown → close pool.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -23,6 +24,13 @@ from fastapi_backend.app.routes.snapshot_routes import router as snapshot_router
 from fastapi_backend.app.routes.rollback_routes import router as rollback_router
 
 logger = logging.getLogger(__name__)
+
+# Comma-separated list of allowed origins, e.g. "http://localhost:3000,https://myapp.com"
+_cors_origins_env = os.getenv("BACKEND_CORS_ORIGINS", "").strip()
+ALLOWED_ORIGINS = (
+    [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
+    or ["http://localhost:3000"]
+)
 
 
 def _init_metadata_tables():
@@ -74,7 +82,7 @@ app = FastAPI(
 # ── CORS (allow the webui frontend to call us) ───────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # tighten in production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

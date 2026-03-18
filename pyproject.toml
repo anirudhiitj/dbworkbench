@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Workbench including rollback"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
 dependencies = [
     "boto3>=1.42.44",
     "pyyaml>=6.0.3",

@@ -31,6 +31,8 @@ def rollback_to_commit(target_commit_id: str) -> dict:
     dict  with rolled_back_to, snapshot_restored, anti_commands_applied, status.
     """
     conn = get_connection()
+    snapshot_info: str | None = None
+    applied = 0
     try:
         cur = conn.cursor()
 
@@ -54,18 +56,28 @@ def rollback_to_commit(target_commit_id: str) -> dict:
         # 3. Find nearest snapshot ≤ target
         cur.execute(mq.SELECT_NEAREST_SNAPSHOT_BEFORE, (target_number,))
         snap_row = cur.fetchone()
-        snapshot_info: str | None = None
 
+        # We are done with metadata lookups on this connection. End the
+        # transaction and release before performing any out-of-band restore.
+        conn.commit()
+        cur.close()
+        release_connection(conn)
+        conn = None
+
+        # Perform the snapshot restore out-of-band (via psql, etc.).
         if snap_row is not None:
             snapshot_s3_key = snap_row[2]
             restore_snapshot(snapshot_s3_key)
             snapshot_info = snapshot_s3_key
 
+        # Obtain a fresh connection for fetching and applying anti-commands
+        conn = get_connection()
+        cur = conn.cursor()
+
         # 4. Fetch anti-commands for commits AFTER the target, reversed
         cur.execute(mq.SELECT_ANTI_COMMANDS_FOR_ROLLBACK, (target_number,))
         anti_rows = cur.fetchall()
 
-        applied = 0
         for row in anti_rows:
             anti_sql = row[3]
             cur.execute(anti_sql)
@@ -80,7 +92,9 @@ def rollback_to_commit(target_commit_id: str) -> dict:
             "status": "success",
         }
     except Exception:
-        conn.rollback()
+        if conn is not None:
+            conn.rollback()
         raise
     finally:
-        release_connection(conn)
+        if conn is not None:
+            release_connection(conn)
