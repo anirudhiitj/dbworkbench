@@ -42,10 +42,32 @@ This system provides a web-based workbench for relational SQL databases that all
 ## Technology Stack
 
 - **Database**: PostgreSQL (SQL-based relational database)
-- **Backend**: Python
-- **Event Streaming**: TBD
-- **Storage**: Cloud object storage (S3 or equivalent)
-- **Frontend**: Web-based UI
+- **Backend**: Python (FastAPI + Django ORM)
+- **Frontend**: Next.js 16 (React 19), TypeScript
+- **Styling**: Tailwind CSS 4
+- **Code Editor**: CodeMirror 6 (SQL language support, autocomplete, one-dark theme)
+- **Terminal**: xterm.js 6 over **WebSocket** (real-time interactive psql sessions)
+- **Layout**: react-resizable-panels
+- **Storage**: AWS S3 (for database snapshots)
+
+## Frontend ↔ Backend Connection
+
+### REST API
+
+All HTTP communication goes through a centralized `request()` helper in `frontend/src/lib/api.ts`.
+
+- **Base URL**: Configured via `NEXT_PUBLIC_API_URL` env variable (defaults to `http://localhost:8001`)
+- **Authentication**: JWT Bearer token auto-injected from `localStorage` on every request; tokens are cleared on `401` to force re-login
+- **Auth lifecycle**: Managed in `frontend/src/lib/auth-context.tsx` (login, register, token refresh)
+- **Workspace state**: `frontend/src/lib/workspace-context.tsx` holds the active connection and schema metadata
+
+### WebSocket (Interactive Terminal)
+
+The terminal uses a WebSocket connection for real-time bidirectional I/O:
+
+1. Frontend calls `POST /terminal/ticket` to obtain a short-lived, single-use ticket (30s TTL) — this avoids exposing the JWT in WebSocket query strings
+2. Frontend opens `ws://<host>/terminal/ws?ticket=<ticket>` using xterm.js (`frontend/src/components/workbench/xterm-terminal.tsx`)
+3. Backend (`fastapi_backend/app/routes/terminal_routes.py`) validates the ticket, opens a `psycopg2` connection to the user's database, and streams terminal I/O over the WebSocket
 
 ## Core Functionality
 

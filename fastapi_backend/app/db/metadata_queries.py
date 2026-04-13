@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Raw SQL for every metadata-table operation.
 
 Tables
@@ -154,4 +155,11 @@ SELECT frequency FROM snapshot_config WHERE id = 1;
 
 UPDATE_SNAPSHOT_FREQUENCY = """
 UPDATE snapshot_config SET frequency = %s WHERE id = 1;
+=======
+"""Raw SQL metadata queries — DEPRECATED.
+
+All metadata is now managed by Django ORM (CommitEvent, InverseOperation,
+Snapshot, SnapshotPolicy).  This file is kept empty to avoid import errors
+in any legacy code that may still reference the module.
+>>>>>>> integration
 """

@@ -2,9 +2,62 @@
 __pycache__/
 *.py[cod]
 *.pyo
+<<<<<<< HEAD
 *.egg-info/
 dist/
 build/
+=======
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+*.venv
+.env
+.env.*
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# Logs
+*.log
+logs/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+>>>>>>> integration
 
 # Virtual environments
 .venv/
@@ -13,6 +66,10 @@ venv/
 # Config / secrets
 *.yaml
 .env
+<<<<<<< HEAD
+=======
+.env.*
+>>>>>>> integration
 
 # IDE
 .vscode/
@@ -21,9 +78,49 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+<<<<<<< HEAD
 
 # UV
 uv.lock
 
 # Certs
 certs/
+=======
+desktop.ini
+
+# Certs
+certs/
+
+# Django
+*.pyc
+db.sqlite3
+*.sqlite3
+*.log
+
+# Migrations are version-controlled — don't ignore them
+
+# Snapshot temp files
+*.sql.tmp
+
+# Pytest
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Claude Code
+.claude/
+
+# ini files
+config.ini
+
+# Charts
+_charts/
+
+# Scripts
+start-all.ps1
+
+# Reports
+generate_report.py
+Group5*.pdf
+>>>>>>> integration
